@@ -1,5 +1,9 @@
 {
   "expectCityList": [],
+  "commuteCenterName": "",
+  "commuteLongitude": null,
+  "commuteLatitude": null,
+  "maxDistanceKm": null,
   "expectJobNameRegExpStr": "",
   "expectJobTypeRegExpStr": "",
   "expectJobDescRegExpStr": "",

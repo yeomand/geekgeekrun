@@ -45,6 +45,18 @@ export class JobInfo {
   })
   address?: string;
 
+  @Column({
+    nullable: true,
+    type: 'float'
+  })
+  longitude?: number;
+
+  @Column({
+    nullable: true,
+    type: 'float'
+  })
+  latitude?: number;
+
   @Column()
   description: string;
 

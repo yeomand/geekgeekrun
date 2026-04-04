@@ -10,6 +10,7 @@
   "author": "geekgeekrun",
   "license": "ISC",
   "dependencies": {
+    "@geekgeekrun/sqlite-plugin": "workspace:*",
     "@geekgeekrun/utils": "workspace:*"
   }
 }

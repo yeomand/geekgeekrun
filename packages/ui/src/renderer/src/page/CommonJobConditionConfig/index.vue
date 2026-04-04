@@ -183,6 +183,74 @@
         </div>
         <div class="h-1px bg-#f0f0f0" mt16px mb16px />
         <div mt16px>
+          <div font-size-14px mb8px>通勤偏好（预留给距离筛选）</div>
+          <div
+            :style="{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '10px'
+            }"
+          >
+            <el-form-item mb0>
+              <div w-full>
+                <div font-size-12px>通勤中心名称</div>
+                <el-input
+                  v-model="formContent.commuteCenterName"
+                  placeholder="例如：家 / 公司附近 / 地铁站"
+                  @blur="
+                    formContent.commuteCenterName = formContent.commuteCenterName?.trim() ?? ''
+                  "
+                />
+              </div>
+            </el-form-item>
+            <el-form-item mb0>
+              <div w-full>
+                <div font-size-12px>最大通勤距离（公里）</div>
+                <el-input-number
+                  v-model="formContent.maxDistanceKm"
+                  controls-position="right"
+                  :min="0"
+                  :step="0.5"
+                  :precision="1"
+                  placeholder="例如 10"
+                />
+              </div>
+            </el-form-item>
+            <el-form-item mb0>
+              <div w-full>
+                <div font-size-12px>通勤中心经度</div>
+                <el-input-number
+                  v-model="formContent.commuteLongitude"
+                  controls-position="right"
+                  :min="-180"
+                  :max="180"
+                  :step="0.000001"
+                  :precision="6"
+                  placeholder="例如 120.003700"
+                />
+              </div>
+            </el-form-item>
+            <el-form-item mb0>
+              <div w-full>
+                <div font-size-12px>通勤中心纬度</div>
+                <el-input-number
+                  v-model="formContent.commuteLatitude"
+                  controls-position="right"
+                  :min="-90"
+                  :max="90"
+                  :step="0.000001"
+                  :precision="6"
+                  placeholder="例如 30.281900"
+                />
+              </div>
+            </el-form-item>
+          </div>
+          <div font-size-12px color-#999 mt8px line-height-1.5em>
+            先把公共通勤参数保存下来，后续接入距离判断时会直接复用这些配置。
+          </div>
+        </div>
+        <div class="h-1px bg-#f0f0f0" mt16px mb16px />
+        <div mt16px>
           <div font-size-14px mb8px>
             薪资（仅支持按月计算薪资的职位；非按月计算薪资职位（例如兼职职位、实习职位）将直接跳过）
           </div>
@@ -630,6 +698,10 @@ const gtagRenderer = (name, params?: object) => {
 const formContent = ref({
   expectCompanies: '',
   expectCityList: [],
+  commuteCenterName: '',
+  commuteLongitude: null,
+  commuteLatitude: null,
+  maxDistanceKm: null,
   jobDetailRegExpMatchLogic: JobDetailRegExpMatchLogic.EVERY,
   expectJobNameRegExpStr: '',
   expectJobTypeRegExpStr: '',

@@ -18,9 +18,9 @@ import {
   checkAnyCombineBossRecommendFilterHasCondition,
   formatStaticCombineFilters,
 } from './combineCalculator.mjs'
-import { default as jobFilterConditions } from './internal-config/job-filter-conditions-20241002.json'
-import { default as rawIndustryFilterExemption } from './internal-config/job-filter-industry-filter-exemption-20241002.json'
-import { ChatStartupFrom } from '@geekgeekrun/sqlite-plugin/dist/entity/ChatStartupLog'
+import { default as jobFilterConditions } from './internal-config/job-filter-conditions-20241002.json' with { type: 'json' }
+import { default as rawIndustryFilterExemption } from './internal-config/job-filter-industry-filter-exemption-20241002.json' with { type: 'json' }
+import { ChatStartupFrom } from '@geekgeekrun/sqlite-plugin/dist/entity/ChatStartupLog.js'
 import {
   MarkAsNotSuitReason,
   MarkAsNotSuitOp,
@@ -29,17 +29,18 @@ import {
   JobDetailRegExpMatchLogic,
   JobSource,
   CombineRecommendJobFilterType
-} from '@geekgeekrun/sqlite-plugin/dist/enums'
+} from '@geekgeekrun/sqlite-plugin/dist/enums.js'
 import {
   activeDescList,
   RECOMMEND_JOB_ENTRY_SELECTOR,
   USER_SET_EXPECT_JOB_ENTRIES_SELECTOR,
   SEARCH_BOX_SELECTOR,
 } from './constant.mjs'
-import { parseSalary } from "@geekgeekrun/sqlite-plugin/dist/utils/parser"
+import { parseSalary } from "@geekgeekrun/sqlite-plugin/dist/utils/parser.js"
 import { waitForSageTimeOrJustContinue } from './sage-time.mjs'
 import cityGroupData from './cityGroup.mjs'
 import { hasIntersection } from '@geekgeekrun/utils/number.mjs';
+import { calculateDistanceKm, roundDistanceKm } from './distance-utils.mjs'
 const flattedCityList = []
 ;(cityGroupData?.zpData?.cityGroup ?? []).forEach(it => {
   const firstChar = it.firstChar
@@ -142,6 +143,15 @@ const expectCityList = (
 ) ?? []
 
 const strategyScopeOptionWhenMarkJobCityNotMatch = readConfigFile('boss.json').strategyScopeOptionWhenMarkJobCityNotMatch ?? StrategyScopeOptionWhenMarkJobNotMatch.ONLY_COMPANY_MATCHED_JOB
+const commuteLatitude = parseFloat(commonJobConditionConfig.commuteLatitude)
+const commuteLongitude = parseFloat(commonJobConditionConfig.commuteLongitude)
+const maxDistanceKm = parseFloat(commonJobConditionConfig.maxDistanceKm)
+const isDistanceFilterEnabled = (
+  !Number.isNaN(commuteLatitude) &&
+  !Number.isNaN(commuteLongitude) &&
+  !Number.isNaN(maxDistanceKm) &&
+  maxDistanceKm > 0
+)
 
 // salary
 const expectSalaryLow = parseFloat(
@@ -984,6 +994,25 @@ async function toRecommendPage (hooks) {
               let hasReachLastPage = false
               let targetJobIndex = -1
               let targetJobData, selectedJobData // they show be same; one is from list, another is from detail
+              function getDistanceCheckResult(jobData) {
+                if (!isDistanceFilterEnabled) {
+                  return null
+                }
+                const distanceKm = calculateDistanceKm(
+                  commuteLatitude,
+                  commuteLongitude,
+                  jobData?.latitude,
+                  jobData?.longitude
+                )
+                if (distanceKm === null) {
+                  return null
+                }
+                const normalizedDistanceKm = roundDistanceKm(distanceKm)
+                return {
+                  distanceKm: normalizedDistanceKm,
+                  isMatch: normalizedDistanceKm <= maxDistanceKm
+                }
+              }
               function checkIfSalarySuit(salaryDesc) {
                 const salaryData = parseSalary(salaryDesc)
                 if (expectSalaryCalculateWay === SalaryCalculateWay.MONTH_SALARY) {
@@ -1246,7 +1275,11 @@ async function toRecommendPage (hooks) {
                             {
                               markFrom: ChatStartupFrom.AutoFromRecommendList,
                               markReason: MarkAsNotSuitReason.JOB_CITY_NOT_SUIT,
-                              extInfo: null,
+                              extInfo: distanceCheckResult ? {
+                                distanceKm: distanceCheckResult.distanceKm,
+                                maxDistanceKm,
+                                commuteCenterName: commonJobConditionConfig.commuteCenterName ?? ''
+                              } : null,
                               markOp: MarkAsNotSuitOp.MARK_AS_NOT_SUIT_ON_LOCAL,
                               jobSource: JobSource[computedSourceList[currentSourceIndex]?.type]
                             }
@@ -1267,6 +1300,11 @@ async function toRecommendPage (hooks) {
                               markFrom: ChatStartupFrom.AutoFromRecommendList,
                               markReason: MarkAsNotSuitReason.JOB_CITY_NOT_SUIT,
                               extInfo: {
+                                ...(distanceCheckResult ? {
+                                  distanceKm: distanceCheckResult.distanceKm,
+                                  maxDistanceKm,
+                                  commuteCenterName: commonJobConditionConfig.commuteCenterName ?? ''
+                                } : {}),
                                 chosenReasonInUi
                               },
                               markOp: MarkAsNotSuitOp.MARK_AS_NOT_SUIT_ON_BOSS,
@@ -1417,6 +1455,7 @@ async function toRecommendPage (hooks) {
                   // 刚刚活跃 // 今日活跃 // 昨日活跃 // 3日内活跃 // 本周活跃 // 2周内活跃
                   // 本月活跃 // 2月内活跃 // 3月内活跃 // 4月内活跃 // 5月内活跃 // 近半年活跃 // 半年前活跃
                   //#endregion
+                  const distanceCheckResult = getDistanceCheckResult(selectedJobData)
                   const indexOfActiveText = activeDescList.indexOf(targetJobData.bossInfo.activeTimeDesc)
                   if (
                     markAsNotActiveSelectedTimeRange > 0 &&
@@ -1428,6 +1467,9 @@ async function toRecommendPage (hooks) {
                   if (
                     (Array.isArray(expectCityList) && expectCityList.length) && !expectCityList.includes(selectedJobData.cityName)
                   ) {
+                    notSuitReasonIdToStrategyMap.city = expectCityNotMatchStrategy
+                  }
+                  if (distanceCheckResult && !distanceCheckResult.isMatch) {
                     notSuitReasonIdToStrategyMap.city = expectCityNotMatchStrategy
                   }
                   if (

@@ -200,6 +200,8 @@ export async function saveJobInfoFromRecommendPage(ds: DataSource, _jobInfo) {
     encryptCompanyId: brandComInfo.encryptBrandId,
     encryptJobId: jobInfo.encryptId,
     jobName: jobInfo.jobName,
+    latitude: jobInfo.latitude,
+    longitude: jobInfo.longitude,
     positionName: jobInfo.positionName,
     experienceName: jobInfo.experienceName,
     salaryHigh: jobSalary.high,

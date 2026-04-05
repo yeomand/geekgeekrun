@@ -141,11 +141,14 @@ const expectCityList = (
     :
     commonJobConditionConfig.expectCityList
 ) ?? []
+const commuteConfigToUse = !fieldsForUseCommonConfig.city
+  ? readConfigFile('boss.json')
+  : commonJobConditionConfig
 
 const strategyScopeOptionWhenMarkJobCityNotMatch = readConfigFile('boss.json').strategyScopeOptionWhenMarkJobCityNotMatch ?? StrategyScopeOptionWhenMarkJobNotMatch.ONLY_COMPANY_MATCHED_JOB
-const commuteLatitude = parseFloat(commonJobConditionConfig.commuteLatitude)
-const commuteLongitude = parseFloat(commonJobConditionConfig.commuteLongitude)
-const maxDistanceKm = parseFloat(commonJobConditionConfig.maxDistanceKm)
+const commuteLatitude = parseFloat(commuteConfigToUse.commuteLatitude)
+const commuteLongitude = parseFloat(commuteConfigToUse.commuteLongitude)
+const maxDistanceKm = parseFloat(commuteConfigToUse.maxDistanceKm)
 const isDistanceFilterEnabled = (
   !Number.isNaN(commuteLatitude) &&
   !Number.isNaN(commuteLongitude) &&
@@ -994,15 +997,37 @@ async function toRecommendPage (hooks) {
               let hasReachLastPage = false
               let targetJobIndex = -1
               let targetJobData, selectedJobData // they show be same; one is from list, another is from detail
+              function getJobCoordinate(jobData) {
+                const latitude = parseFloat(
+                  jobData?.latitude ??
+                    jobData?.jobInfo?.latitude ??
+                    jobData?.locationInfo?.latitude
+                )
+                const longitude = parseFloat(
+                  jobData?.longitude ??
+                    jobData?.jobInfo?.longitude ??
+                    jobData?.locationInfo?.longitude
+                )
+
+                if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+                  return null
+                }
+
+                return { latitude, longitude }
+              }
               function getDistanceCheckResult(jobData) {
                 if (!isDistanceFilterEnabled) {
+                  return null
+                }
+                const coordinate = getJobCoordinate(jobData)
+                if (!coordinate) {
                   return null
                 }
                 const distanceKm = calculateDistanceKm(
                   commuteLatitude,
                   commuteLongitude,
-                  jobData?.latitude,
-                  jobData?.longitude
+                  coordinate.latitude,
+                  coordinate.longitude
                 )
                 if (distanceKm === null) {
                   return null
@@ -1278,7 +1303,7 @@ async function toRecommendPage (hooks) {
                               extInfo: distanceCheckResult ? {
                                 distanceKm: distanceCheckResult.distanceKm,
                                 maxDistanceKm,
-                                commuteCenterName: commonJobConditionConfig.commuteCenterName ?? ''
+                                commuteCenterName: commuteConfigToUse.commuteCenterName ?? ''
                               } : null,
                               markOp: MarkAsNotSuitOp.MARK_AS_NOT_SUIT_ON_LOCAL,
                               jobSource: JobSource[computedSourceList[currentSourceIndex]?.type]
@@ -1303,7 +1328,7 @@ async function toRecommendPage (hooks) {
                                 ...(distanceCheckResult ? {
                                   distanceKm: distanceCheckResult.distanceKm,
                                   maxDistanceKm,
-                                  commuteCenterName: commonJobConditionConfig.commuteCenterName ?? ''
+                                  commuteCenterName: commuteConfigToUse.commuteCenterName ?? ''
                                 } : {}),
                                 chosenReasonInUi
                               },
@@ -1455,7 +1480,9 @@ async function toRecommendPage (hooks) {
                   // 刚刚活跃 // 今日活跃 // 昨日活跃 // 3日内活跃 // 本周活跃 // 2周内活跃
                   // 本月活跃 // 2月内活跃 // 3月内活跃 // 4月内活跃 // 5月内活跃 // 近半年活跃 // 半年前活跃
                   //#endregion
-                  const distanceCheckResult = getDistanceCheckResult(selectedJobData)
+                  const distanceCheckResult =
+                    getDistanceCheckResult(selectedJobData) ??
+                    getDistanceCheckResult(targetJobData)
                   const indexOfActiveText = activeDescList.indexOf(targetJobData.bossInfo.activeTimeDesc)
                   if (
                     markAsNotActiveSelectedTimeRange > 0 &&
@@ -1582,7 +1609,9 @@ async function toRecommendPage (hooks) {
               targetJobData,
               {
                 chatStartupFrom: ChatStartupFrom.AutoFromRecommendList,
-                jobSource: JobSource[computedSourceList[currentSourceIndex]?.type]
+                jobSource: JobSource[computedSourceList[currentSourceIndex]?.type],
+                distanceKm: distanceCheckResult?.distanceKm,
+                commuteCenterName: commuteConfigToUse.commuteCenterName ?? ''
               }
             )
             blockBossNotNewChat.add(targetJobData.jobInfo.encryptUserId)

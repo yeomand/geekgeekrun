@@ -39,6 +39,7 @@ import { Init1000000000000 } from "./migrations/1000000000000-Init";
 import { AddJobSourceColumnForChatStartupLogAndMarkAsNotSuitLog1752380078526 } from "./migrations/1752380078526-AddJobSourceColumnForChatStartupLogAndMarkAsNotSuitLog";
 import { AddJobHireStatusTable1766466476822 } from "./migrations/1766466476822-AddJobHireStatusTable";
 import { AddCoordinateColumnsForJobInfo1768000000000 } from "./migrations/1768000000000-AddCoordinateColumnsForJobInfo";
+import { AddDistanceColumnsForChatStartupLog1768100000000 } from "./migrations/1768100000000-AddDistanceColumnsForChatStartupLog";
 import chunk from 'lodash/chunk'
 import * as typeorm from 'typeorm'
 
@@ -78,7 +79,8 @@ export function initDb(dbFilePath) {
       AddColumnForMarkAsNotSuitLog1746092370665,
       AddJobSourceColumnForChatStartupLogAndMarkAsNotSuitLog1752380078526,
       AddJobHireStatusTable1766466476822,
-      AddCoordinateColumnsForJobInfo1768000000000
+      AddCoordinateColumnsForJobInfo1768000000000,
+      AddDistanceColumnsForChatStartupLog1768100000000
     ],
     migrationsRun: true
   });
@@ -229,12 +231,14 @@ export default class SqlitePlugin {
       });
     });
 
-    hooks.newChatStartup.tapPromise("SqlitePlugin", async (_jobInfo, { chatStartupFrom = ChatStartupFrom.AutoFromRecommendList, jobSource = undefined } = {}) => {
+    hooks.newChatStartup.tapPromise("SqlitePlugin", async (_jobInfo, { chatStartupFrom = ChatStartupFrom.AutoFromRecommendList, jobSource = undefined, distanceKm = undefined, commuteCenterName = undefined } = {}) => {
       const ds = await this.initPromise;
       return await saveChatStartupRecord(ds, _jobInfo, this.userInfo, {
         autoStartupChatRecordId: this.runRecordId,
         chatStartupFrom,
-        jobSource
+        jobSource,
+        distanceKm,
+        commuteCenterName
       });
     });
 

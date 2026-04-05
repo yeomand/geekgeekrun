@@ -2,7 +2,8 @@ import { app } from 'electron'
 import { initPuppeteer } from '@geekgeekrun/geek-auto-start-chat-with-boss/index.mjs'
 import {
   readStorageFile,
-  writeStorageFile
+  writeStorageFile,
+  readConfigFile
 } from '@geekgeekrun/geek-auto-start-chat-with-boss/runtime-file-utils.mjs'
 import {
   RECOMMEND_JOB_ENTRY_SELECTOR,
@@ -35,6 +36,7 @@ import attachListenerForKillSelfOnParentExited from '../../utils/attachListenerF
 import { type ChatMessageRecord } from '@geekgeekrun/sqlite-plugin/src/entity/ChatMessageRecord'
 import { BossInfo } from '@geekgeekrun/sqlite-plugin/dist/entity/BossInfo'
 import { messageForSaveFilter } from '../../../common/utils/chat-list'
+import { calculateDistanceKm, roundDistanceKm } from '@geekgeekrun/geek-auto-start-chat-with-boss/distance-utils.mjs'
 
 import {
   ensureEditThisCookie,
@@ -42,6 +44,35 @@ import {
 } from '@geekgeekrun/launch-bosszhipin-login-page-with-preload-extension/utils.mjs'
 
 const dbInitPromise = initDb(getPublicDbFilePath())
+
+function getDistanceSnapshot(jobData) {
+  const bossConfig = readConfigFile('boss.json') ?? {}
+  const commuteLatitude = parseFloat(bossConfig.commuteLatitude)
+  const commuteLongitude = parseFloat(bossConfig.commuteLongitude)
+  const jobLatitude = parseFloat(jobData?.jobInfo?.latitude ?? jobData?.latitude)
+  const jobLongitude = parseFloat(jobData?.jobInfo?.longitude ?? jobData?.longitude)
+
+  if (
+    [commuteLatitude, commuteLongitude, jobLatitude, jobLongitude].some((it) => Number.isNaN(it))
+  ) {
+    return {
+      distanceKm: undefined,
+      commuteCenterName: bossConfig.commuteCenterName ?? ''
+    }
+  }
+
+  const distanceKm = calculateDistanceKm(
+    commuteLatitude,
+    commuteLongitude,
+    jobLatitude,
+    jobLongitude
+  )
+
+  return {
+    distanceKm: distanceKm === null ? undefined : roundDistanceKm(distanceKm),
+    commuteCenterName: bossConfig.commuteCenterName ?? ''
+  }
+}
 
 const attachRequestsListener = async (target: Target) => {
   const page = await target.page()
@@ -278,7 +309,8 @@ const attachRequestsListener = async (target: Target) => {
         },
         {
           chatStartupFrom: ChatStartupFrom.ManuallyFromRecommendList,
-          jobSource: JobSource[jobSource]
+          jobSource: JobSource[jobSource],
+          ...getDistanceSnapshot(currentJobData)
         }
       )
     } else if (

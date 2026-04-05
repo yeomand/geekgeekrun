@@ -245,7 +245,14 @@
               </div>
             </el-form-item>
           </div>
-          <div font-size-12px color-#999 mt8px line-height-1.5em>
+          <div
+            font-size-12px
+            mt8px
+            line-height-1.5em
+            :style="{
+              color: '#999'
+            }"
+          >
             先把公共通勤参数保存下来，后续接入距离判断时会直接复用这些配置。
           </div>
         </div>

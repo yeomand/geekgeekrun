@@ -609,6 +609,116 @@
                         </div>
                       </template>
                     </city-chooser>
+                    <div
+                      :style="{
+                        marginTop: '12px',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '10px'
+                      }"
+                    >
+                      <el-form-item mb0>
+                        <div w-full>
+                          <div font-size-12px>通勤中心名称</div>
+                          <el-input
+                            v-if="!formContent.fieldsForUseCommonConfig.city"
+                            v-model="formContent.commuteCenterName"
+                            placeholder="例如：家 / 公司附近 / 地铁站"
+                            @blur="
+                              formContent.commuteCenterName =
+                                formContent.commuteCenterName?.trim() ?? ''
+                            "
+                          />
+                          <el-input
+                            v-else
+                            :model-value="commonJobConditionConfig.commuteCenterName || ''"
+                            inert
+                            readonly
+                            opacity-60
+                          />
+                        </div>
+                      </el-form-item>
+                      <el-form-item mb0>
+                        <div w-full>
+                          <div font-size-12px>最大通勤距离（公里）</div>
+                          <el-input-number
+                            v-if="!formContent.fieldsForUseCommonConfig.city"
+                            v-model="formContent.maxDistanceKm"
+                            controls-position="right"
+                            :min="0"
+                            :step="0.5"
+                            :precision="1"
+                            placeholder="例如 10"
+                          />
+                          <el-input
+                            v-else
+                            :model-value="
+                              commonJobConditionConfig.maxDistanceKm ?? ''
+                            "
+                            inert
+                            readonly
+                            opacity-60
+                          />
+                        </div>
+                      </el-form-item>
+                      <el-form-item mb0>
+                        <div w-full>
+                          <div font-size-12px>通勤中心经度</div>
+                          <el-input-number
+                            v-if="!formContent.fieldsForUseCommonConfig.city"
+                            v-model="formContent.commuteLongitude"
+                            controls-position="right"
+                            :min="-180"
+                            :max="180"
+                            :step="0.000001"
+                            :precision="6"
+                            placeholder="例如 120.003700"
+                          />
+                          <el-input
+                            v-else
+                            :model-value="
+                              commonJobConditionConfig.commuteLongitude ?? ''
+                            "
+                            inert
+                            readonly
+                            opacity-60
+                          />
+                        </div>
+                      </el-form-item>
+                      <el-form-item mb0>
+                        <div w-full>
+                          <div font-size-12px>通勤中心纬度</div>
+                          <el-input-number
+                            v-if="!formContent.fieldsForUseCommonConfig.city"
+                            v-model="formContent.commuteLatitude"
+                            controls-position="right"
+                            :min="-90"
+                            :max="90"
+                            :step="0.000001"
+                            :precision="6"
+                            placeholder="例如 30.281900"
+                          />
+                          <el-input
+                            v-else
+                            :model-value="
+                              commonJobConditionConfig.commuteLatitude ?? ''
+                            "
+                            inert
+                            readonly
+                            opacity-60
+                          />
+                        </div>
+                      </el-form-item>
+                    </div>
+                    <div
+                      font-size-12px
+                      mt8px
+                      :style="{
+                        color: '#999'
+                      }"
+                    >
+                      配好后就可以按“通勤中心 + 最大距离”参与工作地筛选。
+                    </div>
                   </div>
                 </el-form-item>
                 <div
@@ -1784,6 +1894,10 @@ const formContent = ref({
   markAsNotActiveSelectedTimeRange: 7,
   // city
   expectCityList: [],
+  commuteCenterName: '',
+  commuteLongitude: null,
+  commuteLatitude: null,
+  maxDistanceKm: null,
   expectCityNotMatchStrategy: MarkAsNotSuitOp.NO_OP,
   strategyScopeOptionWhenMarkJobCityNotMatch:
     StrategyScopeOptionWhenMarkJobNotMatch.ONLY_COMPANY_MATCHED_JOB,
@@ -1918,6 +2032,10 @@ electron.ipcRenderer.invoke('fetch-config-file-content').then((res) => {
 
   // city
   formContent.value.expectCityList = res.config['boss.json']?.expectCityList ?? []
+  formContent.value.commuteCenterName = res.config['boss.json']?.commuteCenterName ?? ''
+  formContent.value.commuteLongitude = res.config['boss.json']?.commuteLongitude ?? null
+  formContent.value.commuteLatitude = res.config['boss.json']?.commuteLatitude ?? null
+  formContent.value.maxDistanceKm = res.config['boss.json']?.maxDistanceKm ?? null
   formContent.value.expectCityNotMatchStrategy = strategyOptionWhenCurrentJobNotMatch
     .map((it) => it.value)
     .includes(res.config['boss.json'].expectCityNotMatchStrategy)
@@ -1998,7 +2116,11 @@ electron.ipcRenderer.invoke('fetch-config-file-content').then((res) => {
       SalaryCalculateWay.MONTH_SALARY,
     expectSalaryLow: res.config['common-job-condition-config.json']?.expectSalaryLow ?? null,
     expectSalaryHigh: res.config['common-job-condition-config.json']?.expectSalaryHigh ?? null,
-    expectCityList: res.config['common-job-condition-config.json']?.expectCityList ?? []
+    expectCityList: res.config['common-job-condition-config.json']?.expectCityList ?? [],
+    commuteCenterName: res.config['common-job-condition-config.json']?.commuteCenterName ?? '',
+    commuteLongitude: res.config['common-job-condition-config.json']?.commuteLongitude ?? null,
+    commuteLatitude: res.config['common-job-condition-config.json']?.commuteLatitude ?? null,
+    maxDistanceKm: res.config['common-job-condition-config.json']?.maxDistanceKm ?? null
   }
 })
 
@@ -2369,7 +2491,22 @@ const handleBlockCompanyNameRegExpTemplateClicked =
     formContent
   })
 
-const commonJobConditionConfig = ref({})
+const commonJobConditionConfig = ref({
+  expectJobNameRegExpStr: '',
+  expectJobTypeRegExpStr: '',
+  expectJobDescRegExpStr: '',
+  jobDetailRegExpMatchLogic: JobDetailRegExpMatchLogic.EVERY,
+  expectCompanies: '',
+  blockCompanyNameRegExpStr: '',
+  expectSalaryCalculateWay: SalaryCalculateWay.MONTH_SALARY,
+  expectSalaryLow: null,
+  expectSalaryHigh: null,
+  expectCityList: [],
+  commuteCenterName: '',
+  commuteLongitude: null,
+  commuteLatitude: null,
+  maxDistanceKm: null
+})
 const unListenCommonJobConditionConfig = ipcRenderer.on(
   'common-job-condition-config-updated',
   (_, { config }) => {
@@ -2401,7 +2538,13 @@ const fillCommonConfigField = (field) => {
       break
     }
     case 'city': {
-      fieldsToReplace = ['expectCityList']
+      fieldsToReplace = [
+        'expectCityList',
+        'commuteCenterName',
+        'commuteLongitude',
+        'commuteLatitude',
+        'maxDistanceKm'
+      ]
       break
     }
     case 'jobDetail': {

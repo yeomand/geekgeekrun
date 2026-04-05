@@ -10,6 +10,7 @@
           size="small"
           table-layout="auto"
           highlight-current-row
+          @sort-change="handleSortChange"
         >
           <ElTableColumn prop="companyName" label="公司" />
           <ElTableColumn prop="jobName" label="职位名称" />
@@ -22,6 +23,16 @@
             "
           />
           <ElTableColumn prop="experienceName" label="工作经验" />
+          <ElTableColumn
+            prop="distanceKm"
+            label="距离"
+            sortable="custom"
+            :sort-orders="['ascending', 'descending', null]"
+            :formatter="
+              (row) =>
+                typeof row.distanceKm === 'number' ? `${row.distanceKm.toFixed(1)}km` : '—'
+            "
+          />
           <ElTableColumn
             label="薪资"
             :formatter="
@@ -106,12 +117,14 @@ import JobInfoSnapshot from '../../features/JobInfoSnapshot/index.vue'
 import { gtagRenderer } from '@renderer/utils/gtag'
 
 const tableData = ref<VChatStartupLog[]>([])
+type DistanceSortOrder = 'asc' | 'desc' | null
 const pageSizeList = ref<number[]>([100, 200, 300, 400])
 const pagination = ref<Omit<PageReq & PagedRes<unknown>, 'data'>>({
   pageNo: 1,
   pageSize: pageSizeList.value[0],
   totalItemCount: 0
 })
+const distanceSortOrder = ref<DistanceSortOrder>(null)
 const getRowKey = (row: VChatStartupLog) => {
   return `${row.encryptJobId}@${row.date}`
 }
@@ -121,12 +134,14 @@ async function getAutoStartChatRecord() {
   try {
     gtagRenderer('start_chat_record_request_sent', {
       page_no: pagination.value.pageNo,
-      page_size: pagination.value.pageSize,
+      page_size: pagination.value.pageSize
     })
     isTableLoading.value = true
     const { data: res } = (await electron.ipcRenderer.invoke('get-auto-start-chat-record', {
       pageNo: pagination.value.pageNo,
-      pageSize: pagination.value.pageSize
+      pageSize: pagination.value.pageSize,
+      sortField: distanceSortOrder.value ? 'distanceKm' : undefined,
+      sortOrder: distanceSortOrder.value ?? undefined
     })) as { data: PagedRes<VChatStartupLog> }
     tableData.value = res.data
     pagination.value = {
@@ -136,13 +151,13 @@ async function getAutoStartChatRecord() {
     }
     gtagRenderer('start_chat_record_request_success', {
       page_no: pagination.value.pageNo,
-      page_size: pagination.value.pageSize,
+      page_size: pagination.value.pageSize
     })
   } catch (err) {
     gtagRenderer('start_chat_record_request_error', {
       err,
       page_no: pagination.value.pageNo,
-      page_size: pagination.value.pageSize,
+      page_size: pagination.value.pageSize
     })
     console.log(err)
     tableData.value = []
@@ -150,6 +165,27 @@ async function getAutoStartChatRecord() {
     tableRef.value?.setScrollTop(0)
     isTableLoading.value = false
   }
+}
+
+function handleSortChange({
+  prop,
+  order
+}: {
+  column: unknown
+  prop: string
+  order: 'ascending' | 'descending' | null
+}) {
+  if (prop !== 'distanceKm') {
+    return
+  }
+
+  distanceSortOrder.value =
+    order === 'ascending' ? 'asc' : order === 'descending' ? 'desc' : null
+  pagination.value.pageNo = 1
+  gtagRenderer('start_chat_record_distance_sort_changed', {
+    order: distanceSortOrder.value ?? 'default'
+  })
+  getAutoStartChatRecord()
 }
 
 getAutoStartChatRecord()

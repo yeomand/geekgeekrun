@@ -35,4 +35,15 @@ export class ChatStartupLog {
     nullable: true
   })
   jobSource?: JobSource;
+
+  @Column({
+    nullable: true,
+    type: 'float'
+  })
+  distanceKm?: number;
+
+  @Column({
+    nullable: true
+  })
+  commuteCenterName?: string;
 }

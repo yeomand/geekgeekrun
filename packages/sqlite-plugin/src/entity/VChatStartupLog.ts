@@ -5,6 +5,8 @@ const { ViewEntity, ViewColumn } = typeorm;
     job_info.*,
     user_info.name as userName,
     chat_startup_log.date,
+    chat_startup_log.distanceKm as distanceKm,
+    chat_startup_log.commuteCenterName as commuteCenterName,
     boss_info.name AS bossName,
     boss_info.title AS bossTitle,
     company_info.name AS companyName
@@ -48,6 +50,12 @@ export class VChatStartupLog {
   address?: string;
 
   @ViewColumn()
+  latitude?: number | null;
+
+  @ViewColumn()
+  longitude?: number | null;
+
+  @ViewColumn()
   description: string;
 
   @ViewColumn()
@@ -64,4 +72,10 @@ export class VChatStartupLog {
 
   @ViewColumn()
   companyName: string;
+
+  @ViewColumn()
+  distanceKm?: number | null;
+
+  @ViewColumn()
+  commuteCenterName?: string | null;
 }

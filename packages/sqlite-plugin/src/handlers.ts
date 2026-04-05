@@ -248,7 +248,13 @@ export async function saveChatStartupRecord(
   ds: DataSource,
   _jobInfo,
   { encryptUserId },
-  { autoStartupChatRecordId = undefined, chatStartupFrom = undefined, jobSource = undefined } = {}
+  {
+    autoStartupChatRecordId = undefined,
+    chatStartupFrom = undefined,
+    jobSource = undefined,
+    distanceKm = undefined,
+    commuteCenterName = undefined
+  } = {}
 ) {
   const { jobInfo } = _jobInfo;
 
@@ -261,6 +267,8 @@ export async function saveChatStartupRecord(
     autoStartupChatRecordId,
     chatStartupFrom,
     jobSource,
+    distanceKm,
+    commuteCenterName
   }
   Object.assign(chatStartupLog, chatStartupLogPayload)
 

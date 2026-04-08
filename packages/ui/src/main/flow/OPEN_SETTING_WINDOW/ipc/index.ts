@@ -22,6 +22,7 @@ import {
 } from '../utils/db/index'
 import { PageReq } from '../../../../common/types/pagination'
 import { pipeWriteRegardlessError } from '../../utils/pipe'
+import { getElectronChildProcessArgs } from '../../../utils/getElectronChildProcessArgs'
 import { WriteStream } from 'node:fs'
 // eslint-disable-next-line vue/prefer-import-from-vue
 import { hasOwn } from '@vue/shared'
@@ -102,6 +103,18 @@ export default function initIpc() {
     // city
     if (hasOwn(payload, 'expectCityList')) {
       bossConfig.expectCityList = payload.expectCityList
+    }
+    if (hasOwn(payload, 'commuteCenterName')) {
+      bossConfig.commuteCenterName = payload.commuteCenterName
+    }
+    if (hasOwn(payload, 'commuteLongitude')) {
+      bossConfig.commuteLongitude = payload.commuteLongitude
+    }
+    if (hasOwn(payload, 'commuteLatitude')) {
+      bossConfig.commuteLatitude = payload.commuteLatitude
+    }
+    if (hasOwn(payload, 'maxDistanceKm')) {
+      bossConfig.maxDistanceKm = payload.maxDistanceKm
     }
     if (hasOwn(payload, 'expectCityNotMatchStrategy')) {
       bossConfig.expectCityNotMatchStrategy = payload.expectCityNotMatchStrategy
@@ -361,9 +374,7 @@ export default function initIpc() {
       }
       subProcessOfOpenBossSite = childProcess.spawn(
         process.argv[0],
-        process.env.NODE_ENV === 'development'
-          ? [process.argv[1], `--mode=launchBossSite`]
-          : [`--mode=launchBossSite`],
+        getElectronChildProcessArgs([`--mode=launchBossSite`]),
         {
           env: subProcessEnv,
           stdio: ['inherit', 'inherit', 'inherit', 'pipe']

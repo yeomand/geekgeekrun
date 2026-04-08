@@ -5,6 +5,7 @@ import * as childProcess from 'node:child_process'
 import * as JSONStream from 'JSONStream'
 import { getLastUsedAndAvailableBrowser } from '../flow/DOWNLOAD_DEPENDENCIES/utils/browser-history'
 import { configWithBrowserAssistant } from '../features/config-with-browser-assistant'
+import { getElectronChildProcessArgs } from '../utils/getElectronChildProcessArgs'
 
 export let cookieAssistantWindow: BrowserWindow | null = null
 export function createCookieAssistantWindow(
@@ -86,9 +87,7 @@ export function createCookieAssistantWindow(
     }
     subProcessOfBossZhipinLoginPageWithPreloadExtension = childProcess.spawn(
       process.argv[0],
-      process.env.NODE_ENV === 'development'
-        ? [process.argv[1], `--mode=launchBossZhipinLoginPageWithPreloadExtension`]
-        : [`--mode=launchBossZhipinLoginPageWithPreloadExtension`],
+      getElectronChildProcessArgs([`--mode=launchBossZhipinLoginPageWithPreloadExtension`]),
       {
         env: subProcessEnv,
         stdio: [null, null, null, 'pipe', 'ipc']

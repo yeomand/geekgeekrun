@@ -7,6 +7,7 @@ import * as fs from 'node:fs'
 import { cacheDir } from '../constant'
 import { EXPECT_CHROMIUM_BUILD_ID } from '../../common/constant'
 import * as puppeteerManager from '@puppeteer/browsers'
+import { getElectronChildProcessArgs } from '../utils/getElectronChildProcessArgs'
 
 export let browserDownloadProgressWindow: BrowserWindow | null = null
 
@@ -62,9 +63,7 @@ export function createBrowserDownloadProgressWindow(
     }
     subProcessOfCheckAndDownloadDependencies = childProcess.spawn(
       process.argv[0],
-      process.env.NODE_ENV === 'development'
-        ? [process.argv[1], `--mode=downloadDependenciesForInit`]
-        : [`--mode=downloadDependenciesForInit`],
+      getElectronChildProcessArgs([`--mode=downloadDependenciesForInit`]),
       {
         stdio: [null, null, null, 'pipe', 'ipc']
       }

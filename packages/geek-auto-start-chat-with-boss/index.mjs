@@ -1,4 +1,4 @@
-import {
+﻿import {
   sleep,
   sleepWithRandomDelay
 } from '@geekgeekrun/utils/sleep.mjs'
@@ -18,9 +18,9 @@ import {
   checkAnyCombineBossRecommendFilterHasCondition,
   formatStaticCombineFilters,
 } from './combineCalculator.mjs'
-import { default as jobFilterConditions } from './internal-config/job-filter-conditions-20241002.json'
-import { default as rawIndustryFilterExemption } from './internal-config/job-filter-industry-filter-exemption-20241002.json'
-import { ChatStartupFrom } from '@geekgeekrun/sqlite-plugin/dist/entity/ChatStartupLog'
+import { default as jobFilterConditions } from './internal-config/job-filter-conditions-20241002.json' with { type: 'json' }
+import { default as rawIndustryFilterExemption } from './internal-config/job-filter-industry-filter-exemption-20241002.json' with { type: 'json' }
+import { ChatStartupFrom } from '@geekgeekrun/sqlite-plugin/dist/entity/ChatStartupLog.js'
 import {
   MarkAsNotSuitReason,
   MarkAsNotSuitOp,
@@ -29,17 +29,18 @@ import {
   JobDetailRegExpMatchLogic,
   JobSource,
   CombineRecommendJobFilterType
-} from '@geekgeekrun/sqlite-plugin/dist/enums'
+} from '@geekgeekrun/sqlite-plugin/dist/enums.js'
 import {
   activeDescList,
   RECOMMEND_JOB_ENTRY_SELECTOR,
   USER_SET_EXPECT_JOB_ENTRIES_SELECTOR,
   SEARCH_BOX_SELECTOR,
 } from './constant.mjs'
-import { parseSalary } from "@geekgeekrun/sqlite-plugin/dist/utils/parser"
+import { parseSalary } from "@geekgeekrun/sqlite-plugin/dist/utils/parser.js"
 import { waitForSageTimeOrJustContinue } from './sage-time.mjs'
 import cityGroupData from './cityGroup.mjs'
 import { hasIntersection } from '@geekgeekrun/utils/number.mjs';
+import { calculateDistanceKm, roundDistanceKm } from './distance-utils.mjs'
 const flattedCityList = []
 ;(cityGroupData?.zpData?.cityGroup ?? []).forEach(it => {
   const firstChar = it.firstChar
@@ -140,8 +141,20 @@ const expectCityList = (
     :
     commonJobConditionConfig.expectCityList
 ) ?? []
+const commuteConfigToUse = !fieldsForUseCommonConfig.city
+  ? readConfigFile('boss.json')
+  : commonJobConditionConfig
 
 const strategyScopeOptionWhenMarkJobCityNotMatch = readConfigFile('boss.json').strategyScopeOptionWhenMarkJobCityNotMatch ?? StrategyScopeOptionWhenMarkJobNotMatch.ONLY_COMPANY_MATCHED_JOB
+const commuteLatitude = parseFloat(commuteConfigToUse.commuteLatitude)
+const commuteLongitude = parseFloat(commuteConfigToUse.commuteLongitude)
+const maxDistanceKm = parseFloat(commuteConfigToUse.maxDistanceKm)
+const isDistanceFilterEnabled = (
+  !Number.isNaN(commuteLatitude) &&
+  !Number.isNaN(commuteLongitude) &&
+  !Number.isNaN(maxDistanceKm) &&
+  maxDistanceKm > 0
+)
 
 // salary
 const expectSalaryLow = parseFloat(
@@ -170,12 +183,12 @@ const strategyScopeOptionWhenMarkSalaryNotMatch = readConfigFile('boss.json').st
 let expectWorkExpList = readConfigFile('boss.json').expectWorkExpList ?? []
 const expectWorkExpListSet = new Set(expectWorkExpList)
 if (
-  expectWorkExpListSet.has('应届生') ||
-  expectWorkExpListSet.has('在校生')
+  expectWorkExpListSet.has('搴斿眾鐢?) ||
+  expectWorkExpListSet.has('鍦ㄦ牎鐢?)
 ) {
-  expectWorkExpListSet.delete('应届生')
-  expectWorkExpListSet.delete('在校生')
-  expectWorkExpListSet.add('在校/应届')
+  expectWorkExpListSet.delete('搴斿眾鐢?)
+  expectWorkExpListSet.delete('鍦ㄦ牎鐢?)
+  expectWorkExpListSet.add('鍦ㄦ牎/搴斿眾')
 }
 expectWorkExpList = Array.from(expectWorkExpListSet)
 
@@ -352,11 +365,11 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
     if (chooseReasonDialogProxy) {
       switch (reasonCode) {
         case MarkAsNotSuitReason.COMPANY_NAME_NOT_SUIT: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="公司"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="距离"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="薪资"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="鍏徃"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="璺濈"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="钖祫"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -364,10 +377,10 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
           break
         }
         case MarkAsNotSuitReason.BOSS_INACTIVE: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title="BOSS活跃度低"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="职位停招/招满"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title="BOSS娲昏穬搴︿綆"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="鑱屼綅鍋滄嫑/鎷涙弧"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -376,11 +389,11 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
         }
         case MarkAsNotSuitReason.JOB_WORK_EXP_NOT_SUIT:
         case MarkAsNotSuitReason.JOB_CITY_NOT_SUIT: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="城市"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="距离"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="公司"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="鍩庡競"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="璺濈"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="鍏徃"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -388,12 +401,12 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
           break
         }
         case MarkAsNotSuitReason.JOB_SALARY_NOT_SUIT: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="薪资"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title$="城市"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="距离"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="公司"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="钖祫"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title$="鍩庡競"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="璺濈"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="鍏徃"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -402,9 +415,9 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
         }
         case MarkAsNotSuitReason.JOB_NOT_SUIT:
         default: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="职位"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="鑱屼綅"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -492,7 +505,7 @@ async function setFilterCondition (selectedFilters) {
     industryList = []
   } = selectedFilters
 
-  const placeholderTexts = ['城市', '薪资待遇', '工作经验', '学历要求', '公司行业', '公司规模']
+  const placeholderTexts = ['鍩庡競', '钖祫寰呴亣', '宸ヤ綔缁忛獙', '瀛﹀巻瑕佹眰', '鍏徃琛屼笟', '鍏徃瑙勬ā']
   const optionKaPrefixes = ['switch_city_dialog_open', 'sel-job-rec-salary-', 'sel-job-rec-exp-', 'sel-job-rec-degree-', 'sel-industry-', 'sel-job-rec-scale-']
   const conditionArr = [cityList, salaryList, experienceList, degreeList, industryList, scaleList]
 
@@ -500,20 +513,20 @@ async function setFilterCondition (selectedFilters) {
   for (let i = 0; i < placeholderTexts.length; i++) {
     const text = placeholderTexts[i]
     const condition = conditionArr[i]
-    console.log(`${text}：`, condition.length === 0 ? '不限' : condition.map(code => {
-      if (text === '公司行业') {
+    console.log(`${text}锛歚, condition.length === 0 ? '涓嶉檺' : condition.map(code => {
+      if (text === '鍏徃琛屼笟') {
         return industryFilterConditionsMapByCode[code]?.name ?? code
       } else {
         return jobFilterConditionsMapByCode[code]?.name ?? code
       }
-    }).join('，'))
+    }).join('锛?))
   }
   console.log('----------------------------')
   for(let i = 0; i < placeholderTexts.length; i++) {
     const placeholderText = placeholderTexts[i]
     const filterDropdownProxy = await (async () => {
       const jsHandle = (await page.evaluateHandle((placeholderText) => {
-        if (placeholderText === '城市') {
+        if (placeholderText === '鍩庡競') {
           return document.querySelector('.page-jobs-main .filter-condition-inner [ka="switch_city_dialog_open"]')
         }
         else {
@@ -530,7 +543,7 @@ async function setFilterCondition (selectedFilters) {
 
     const currentFilterConditions = conditionArr[i];
     const filterDropdownCssList = await filterDropdownProxy.evaluate(el => Array.from(el.classList));
-    if (placeholderText === '城市') {
+    if (placeholderText === '鍩庡競') {
       const onPageSelectedCity = filterDropdownCssList.includes('active') ? (await filterDropdownProxy.evaluate(el => el.textContent.trim())) : null
       if (!onPageSelectedCity && !currentFilterConditions.length) {
         continue
@@ -589,13 +602,13 @@ async function setFilterCondition (selectedFilters) {
 
         const optionKaPrefix = optionKaPrefixes[i]
         if (!currentFilterConditions.length) {
-          if (placeholderText === '公司行业') {
+          if (placeholderText === '鍏徃琛屼笟') {
             const activeOptionElAtCurrentFilterProxyList = await page.$$(`.page-jobs-main .filter-condition-inner .active[ka^="${optionKaPrefix}"]`)
             for (const it of activeOptionElAtCurrentFilterProxyList) {
               await it.click()
             }
           } else {
-            // select 不限 immediately
+            // select 涓嶉檺 immediately
             const buxianOptionElProxy = await page.$(`.page-jobs-main .filter-condition-inner [ka="${optionKaPrefix}${0}"]`)
             await buxianOptionElProxy.click()
           }
@@ -609,10 +622,10 @@ async function setFilterCondition (selectedFilters) {
               })
             })
           )).map(it => it.replace(optionKaPrefix, '')).map(Number)
-          if (placeholderText !== '薪资待遇') {
+          if (placeholderText !== '钖祫寰呴亣') {
             for(let i = 0; i < activeOptionValues.length; i++) {
               let activeValue
-              if (placeholderText === '公司行业') {
+              if (placeholderText === '鍏徃琛屼笟') {
                 activeValue = industryFilterConditionsMapByIndex[activeOptionValues[i]]?.code
               } else {
                 activeValue = activeOptionValues[i]
@@ -626,7 +639,7 @@ async function setFilterCondition (selectedFilters) {
           //#endregion
           //#region only click the one which we need check, don't change already checked.
           const conditionToCheck = currentFilterConditions.filter(it => {
-            if (placeholderText === '公司行业') {
+            if (placeholderText === '鍏徃琛屼笟') {
               return !activeOptionValues.map(value => industryFilterConditionsMapByIndex[value].code).includes(it);
             } else {
               return !activeOptionValues.includes(it)
@@ -634,7 +647,7 @@ async function setFilterCondition (selectedFilters) {
           })
           for(let j = 0; j < conditionToCheck.length; j++) {
             let optionValue
-            if (placeholderText === '公司行业') {
+            if (placeholderText === '鍏徃琛屼笟') {
               optionValue = industryFilterConditionCodeToIndexMap[conditionToCheck[j]]
             } else {
               optionValue = conditionToCheck[j]
@@ -948,7 +961,7 @@ async function toRecommendPage (hooks) {
                 // so just set those job which city is not suit to blockJobNotSuit
                 // to skip view detail
 
-                // skip invalid salaryData (兼职、日结、实习 etc)
+                // skip invalid salaryData (鍏艰亴銆佹棩缁撱€佸疄涔?etc)
                 jobListData.forEach(it => {
                   const salaryData = parseSalary(it.salaryDesc)
                   if (!salaryData.high || !salaryData.low) {
@@ -984,6 +997,47 @@ async function toRecommendPage (hooks) {
               let hasReachLastPage = false
               let targetJobIndex = -1
               let targetJobData, selectedJobData // they show be same; one is from list, another is from detail
+              function getJobCoordinate(jobData) {
+                const latitude = parseFloat(
+                  jobData?.latitude ??
+                    jobData?.jobInfo?.latitude ??
+                    jobData?.locationInfo?.latitude
+                )
+                const longitude = parseFloat(
+                  jobData?.longitude ??
+                    jobData?.jobInfo?.longitude ??
+                    jobData?.locationInfo?.longitude
+                )
+
+                if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+                  return null
+                }
+
+                return { latitude, longitude }
+              }
+              function getDistanceCheckResult(jobData) {
+                if (!isDistanceFilterEnabled) {
+                  return null
+                }
+                const coordinate = getJobCoordinate(jobData)
+                if (!coordinate) {
+                  return null
+                }
+                const distanceKm = calculateDistanceKm(
+                  commuteLatitude,
+                  commuteLongitude,
+                  coordinate.latitude,
+                  coordinate.longitude
+                )
+                if (distanceKm === null) {
+                  return null
+                }
+                const normalizedDistanceKm = roundDistanceKm(distanceKm)
+                return {
+                  distanceKm: normalizedDistanceKm,
+                  isMatch: normalizedDistanceKm <= maxDistanceKm
+                }
+              }
               function checkIfSalarySuit(salaryDesc) {
                 const salaryData = parseSalary(salaryDesc)
                 if (expectSalaryCalculateWay === SalaryCalculateWay.MONTH_SALARY) {
@@ -1246,7 +1300,11 @@ async function toRecommendPage (hooks) {
                             {
                               markFrom: ChatStartupFrom.AutoFromRecommendList,
                               markReason: MarkAsNotSuitReason.JOB_CITY_NOT_SUIT,
-                              extInfo: null,
+                              extInfo: distanceCheckResult ? {
+                                distanceKm: distanceCheckResult.distanceKm,
+                                maxDistanceKm,
+                                commuteCenterName: commuteConfigToUse.commuteCenterName ?? ''
+                              } : null,
                               markOp: MarkAsNotSuitOp.MARK_AS_NOT_SUIT_ON_LOCAL,
                               jobSource: JobSource[computedSourceList[currentSourceIndex]?.type]
                             }
@@ -1267,6 +1325,11 @@ async function toRecommendPage (hooks) {
                               markFrom: ChatStartupFrom.AutoFromRecommendList,
                               markReason: MarkAsNotSuitReason.JOB_CITY_NOT_SUIT,
                               extInfo: {
+                                ...(distanceCheckResult ? {
+                                  distanceKm: distanceCheckResult.distanceKm,
+                                  maxDistanceKm,
+                                  commuteCenterName: commuteConfigToUse.commuteCenterName ?? ''
+                                } : {}),
                                 chosenReasonInUi
                               },
                               markOp: MarkAsNotSuitOp.MARK_AS_NOT_SUIT_ON_BOSS,
@@ -1414,13 +1477,16 @@ async function toRecommendPage (hooks) {
                   }
                   //#region
                   // null
-                  // 刚刚活跃 // 今日活跃 // 昨日活跃 // 3日内活跃 // 本周活跃 // 2周内活跃
-                  // 本月活跃 // 2月内活跃 // 3月内活跃 // 4月内活跃 // 5月内活跃 // 近半年活跃 // 半年前活跃
+                  // 鍒氬垰娲昏穬 // 浠婃棩娲昏穬 // 鏄ㄦ棩娲昏穬 // 3鏃ュ唴娲昏穬 // 鏈懆娲昏穬 // 2鍛ㄥ唴娲昏穬
+                  // 鏈湀娲昏穬 // 2鏈堝唴娲昏穬 // 3鏈堝唴娲昏穬 // 4鏈堝唴娲昏穬 // 5鏈堝唴娲昏穬 // 杩戝崐骞存椿璺?// 鍗婂勾鍓嶆椿璺?
                   //#endregion
+                  const distanceCheckResult =
+                    getDistanceCheckResult(selectedJobData) ??
+                    getDistanceCheckResult(targetJobData)
                   let activeTimeDescForCompare = targetJobData.bossInfo.activeTimeDesc
                   // handle empty string case
                   if (activeTimeDescForCompare === '') {
-                    activeTimeDescForCompare = '半年前活跃'
+                    activeTimeDescForCompare = '鍗婂勾鍓嶆椿璺?'
                   }
                   const indexOfActiveText = activeDescList.indexOf(activeTimeDescForCompare)
                   if (
@@ -1433,6 +1499,9 @@ async function toRecommendPage (hooks) {
                   if (
                     (Array.isArray(expectCityList) && expectCityList.length) && !expectCityList.includes(selectedJobData.cityName)
                   ) {
+                    notSuitReasonIdToStrategyMap.city = expectCityNotMatchStrategy
+                  }
+                  if (distanceCheckResult && !distanceCheckResult.isMatch) {
                     notSuitReasonIdToStrategyMap.city = expectCityNotMatchStrategy
                   }
                   if (
@@ -1488,7 +1557,7 @@ async function toRecommendPage (hooks) {
                     continue continueFind
                   }
                   const startChatButtonInnerHTML = await page.evaluate('document.querySelector(".job-detail-box .op-btn.op-btn-chat")?.innerHTML.trim()')
-                  if (startChatButtonInnerHTML !== '立即沟通') {
+                  if (startChatButtonInnerHTML !== '绔嬪嵆娌熼€?) {
                     blockBossNotNewChat.add(targetJobData.jobInfo.encryptUserId)
                     continue continueFind
                   }
@@ -1558,7 +1627,9 @@ async function toRecommendPage (hooks) {
               targetJobData,
               {
                 chatStartupFrom: ChatStartupFrom.AutoFromRecommendList,
-                jobSource: JobSource[computedSourceList[currentSourceIndex]?.type]
+                jobSource: JobSource[computedSourceList[currentSourceIndex]?.type],
+                distanceKm: distanceCheckResult?.distanceKm,
+                commuteCenterName: commuteConfigToUse.commuteCenterName ?? ''
               }
             )
             blockBossNotNewChat.add(targetJobData.jobInfo.encryptUserId)
@@ -1585,7 +1656,7 @@ async function toRecommendPage (hooks) {
             else if (
               res.zpData.bizCode === 1 &&
               res.zpData.bizData?.chatRemindDialog?.blockLevel === 0 &&
-              /剩\d+次沟通机会/.test(res.zpData.bizData?.chatRemindDialog?.content)
+              /鍓‐d+娆℃矡閫氭満浼?.test(res.zpData.bizData?.chatRemindDialog?.content)
             ) {
               await waitForSageTimeOrJustContinue({
                 tag: 'beforeJobChatStartupAfterTwiceConfirm',
@@ -1598,13 +1669,13 @@ async function toRecommendPage (hooks) {
             }
             else if (
               res.zpData.bizCode === 1 &&
-              /猎头/.test(res.zpData.bizData?.chatRemindDialog?.content)
+              /鐚庡ご/.test(res.zpData.bizData?.chatRemindDialog?.content)
             ) {
               await waitForSageTimeOrJustContinue({
                 tag: 'beforeJobChatStartupAfterTwiceConfirm',
                 hooks
               })
-              const confirmButton = await page.waitForSelector(`xpath///*[contains(@class, "chat-block-dialog")]//*[contains(@class, "chat-block-footer")]//*[contains(text(), "继续")]`)
+              const confirmButton = await page.waitForSelector(`xpath///*[contains(@class, "chat-block-dialog")]//*[contains(@class, "chat-block-footer")]//*[contains(text(), "缁х画")]`)
               await confirmButton.click()
               const nextRes = await waitAddFriendResponse()
               await handleAddFriendResponse(nextRes)
@@ -1613,8 +1684,8 @@ async function toRecommendPage (hooks) {
               res.zpData.bizCode === 1 &&
               res.zpData.bizData?.chatRemindDialog?.blockLevel === 0 && 
               (
-                res.zpData.bizData?.chatRemindDialog?.content === `今日沟通人数已达上限，请明天再试` ||
-                /明天再来/.test(res.zpData.bizData?.chatRemindDialog?.content)
+                res.zpData.bizData?.chatRemindDialog?.content === `浠婃棩娌熼€氫汉鏁板凡杈句笂闄愶紝璇锋槑澶╁啀璇昤 ||
+                /鏄庡ぉ鍐嶆潵/.test(res.zpData.bizData?.chatRemindDialog?.content)
               )
             ) {
               // startup chat error, may the chance of today has used out

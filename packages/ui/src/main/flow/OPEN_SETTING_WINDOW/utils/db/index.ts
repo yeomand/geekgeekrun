@@ -3,6 +3,9 @@ import { type Worker } from 'node:worker_threads'
 import { randomUUID } from 'node:crypto'
 import { PageReq } from '../../../../../common/types/pagination'
 
+type ChatRecordSortField = 'distanceKm'
+type ChatRecordSortOrder = 'asc' | 'desc'
+
 let worker: Worker | null = null
 let workerExitCode: number | null = null
 export const initDbWorker = () => {
@@ -50,11 +53,21 @@ const createWorkerPromise = async (data) => {
   })
 }
 
-export const getAutoStartChatRecord = async ({ pageNo, pageSize }: Partial<PageReq> = {}) => {
+export const getAutoStartChatRecord = async ({
+  pageNo,
+  pageSize,
+  sortField,
+  sortOrder
+}: Partial<PageReq> & {
+  sortField?: ChatRecordSortField
+  sortOrder?: ChatRecordSortOrder
+} = {}) => {
   const res = await createWorkerPromise({
     type: 'getAutoStartChatRecord',
     pageNo,
-    pageSize
+    pageSize,
+    sortField,
+    sortOrder
   })
   return res
 }

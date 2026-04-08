@@ -911,7 +911,7 @@ async function toRecommendPage (hooks) {
           return !document.querySelector('.job-recommend-result .job-rec-loading')
         })
         try {
-          const { targetJobIndex, targetJobData } = await new Promise(async (resolve, reject) => {
+          const { targetJobIndex, targetJobData, distanceCheckResult } = await new Promise(async (resolve, reject) => {
             try {
               let requestNextPagePromiseWithResolver = null
               page.on(
@@ -997,6 +997,7 @@ async function toRecommendPage (hooks) {
               let hasReachLastPage = false
               let targetJobIndex = -1
               let targetJobData, selectedJobData // they show be same; one is from list, another is from detail
+              let distanceCheckResultForTargetJob = null
               function getJobCoordinate(jobData) {
                 const latitude = parseFloat(
                   jobData?.latitude ??
@@ -1483,6 +1484,7 @@ async function toRecommendPage (hooks) {
                   const distanceCheckResult =
                     getDistanceCheckResult(selectedJobData) ??
                     getDistanceCheckResult(targetJobData)
+                  distanceCheckResultForTargetJob = distanceCheckResult
                   const indexOfActiveText = activeDescList.indexOf(targetJobData.bossInfo.activeTimeDesc)
                   if (
                     markAsNotActiveSelectedTimeRange > 0 &&
@@ -1570,7 +1572,8 @@ async function toRecommendPage (hooks) {
               resolve(
                 {
                   targetJobIndex,
-                  targetJobData
+                  targetJobData,
+                  distanceCheckResult: distanceCheckResultForTargetJob
                 }
               )
             } catch(err) {

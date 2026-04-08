@@ -1,4 +1,4 @@
-﻿import {
+import {
   sleep,
   sleepWithRandomDelay
 } from '@geekgeekrun/utils/sleep.mjs'
@@ -183,12 +183,12 @@ const strategyScopeOptionWhenMarkSalaryNotMatch = readConfigFile('boss.json').st
 let expectWorkExpList = readConfigFile('boss.json').expectWorkExpList ?? []
 const expectWorkExpListSet = new Set(expectWorkExpList)
 if (
-  expectWorkExpListSet.has('搴斿眾鐢?) ||
-  expectWorkExpListSet.has('鍦ㄦ牎鐢?)
+  expectWorkExpListSet.has('应届生') ||
+  expectWorkExpListSet.has('在校生')
 ) {
-  expectWorkExpListSet.delete('搴斿眾鐢?)
-  expectWorkExpListSet.delete('鍦ㄦ牎鐢?)
-  expectWorkExpListSet.add('鍦ㄦ牎/搴斿眾')
+  expectWorkExpListSet.delete('应届生')
+  expectWorkExpListSet.delete('在校生')
+  expectWorkExpListSet.add('在校/应届')
 }
 expectWorkExpList = Array.from(expectWorkExpListSet)
 
@@ -365,11 +365,11 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
     if (chooseReasonDialogProxy) {
       switch (reasonCode) {
         case MarkAsNotSuitReason.COMPANY_NAME_NOT_SUIT: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="鍏徃"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="璺濈"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="钖祫"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="公司"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="距离"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="薪资"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -377,10 +377,10 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
           break
         }
         case MarkAsNotSuitReason.BOSS_INACTIVE: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title="BOSS娲昏穬搴︿綆"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="鑱屼綅鍋滄嫑/鎷涙弧"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title="BOSS活跃度低"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="职位停招/招满"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -389,11 +389,11 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
         }
         case MarkAsNotSuitReason.JOB_WORK_EXP_NOT_SUIT:
         case MarkAsNotSuitReason.JOB_CITY_NOT_SUIT: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="鍩庡競"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="璺濈"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="鍏徃"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="城市"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="距离"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="公司"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -401,12 +401,12 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
           break
         }
         case MarkAsNotSuitReason.JOB_SALARY_NOT_SUIT: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="钖祫"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title$="鍩庡競"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="璺濈"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="鍏徃"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title*="薪资"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title$="城市"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="距离"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title*="公司"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -415,9 +415,9 @@ async function markJobAsNotSuitInRecommendPage (reasonCode) {
         }
         case MarkAsNotSuitReason.JOB_NOT_SUIT:
         default: {
-          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="鑱屼綅"]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="闈㈣瘯杩?鍏ヨ亴杩?]`))
-            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="閲嶅鎺ㄨ崘"]`))
+          const opProxy = (await chooseReasonDialogProxy.$(`.zp-type-item[title$="职位"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="面试过/入职过"]`))
+            ?? (await chooseReasonDialogProxy.$(`.zp-type-item[title="重复推荐"]`))
           if (opProxy) {
             await opProxy.click()
             isOptionChosen = true
@@ -505,7 +505,7 @@ async function setFilterCondition (selectedFilters) {
     industryList = []
   } = selectedFilters
 
-  const placeholderTexts = ['鍩庡競', '钖祫寰呴亣', '宸ヤ綔缁忛獙', '瀛﹀巻瑕佹眰', '鍏徃琛屼笟', '鍏徃瑙勬ā']
+  const placeholderTexts = ['城市', '薪资待遇', '工作经验', '学历要求', '公司行业', '公司规模']
   const optionKaPrefixes = ['switch_city_dialog_open', 'sel-job-rec-salary-', 'sel-job-rec-exp-', 'sel-job-rec-degree-', 'sel-industry-', 'sel-job-rec-scale-']
   const conditionArr = [cityList, salaryList, experienceList, degreeList, industryList, scaleList]
 
@@ -513,20 +513,20 @@ async function setFilterCondition (selectedFilters) {
   for (let i = 0; i < placeholderTexts.length; i++) {
     const text = placeholderTexts[i]
     const condition = conditionArr[i]
-    console.log(`${text}锛歚, condition.length === 0 ? '涓嶉檺' : condition.map(code => {
-      if (text === '鍏徃琛屼笟') {
+    console.log(`${text}：`, condition.length === 0 ? '不限' : condition.map(code => {
+      if (text === '公司行业') {
         return industryFilterConditionsMapByCode[code]?.name ?? code
       } else {
         return jobFilterConditionsMapByCode[code]?.name ?? code
       }
-    }).join('锛?))
+    }).join('，'))
   }
   console.log('----------------------------')
   for(let i = 0; i < placeholderTexts.length; i++) {
     const placeholderText = placeholderTexts[i]
     const filterDropdownProxy = await (async () => {
       const jsHandle = (await page.evaluateHandle((placeholderText) => {
-        if (placeholderText === '鍩庡競') {
+        if (placeholderText === '城市') {
           return document.querySelector('.page-jobs-main .filter-condition-inner [ka="switch_city_dialog_open"]')
         }
         else {
@@ -543,7 +543,7 @@ async function setFilterCondition (selectedFilters) {
 
     const currentFilterConditions = conditionArr[i];
     const filterDropdownCssList = await filterDropdownProxy.evaluate(el => Array.from(el.classList));
-    if (placeholderText === '鍩庡競') {
+    if (placeholderText === '城市') {
       const onPageSelectedCity = filterDropdownCssList.includes('active') ? (await filterDropdownProxy.evaluate(el => el.textContent.trim())) : null
       if (!onPageSelectedCity && !currentFilterConditions.length) {
         continue
@@ -602,13 +602,13 @@ async function setFilterCondition (selectedFilters) {
 
         const optionKaPrefix = optionKaPrefixes[i]
         if (!currentFilterConditions.length) {
-          if (placeholderText === '鍏徃琛屼笟') {
+          if (placeholderText === '公司行业') {
             const activeOptionElAtCurrentFilterProxyList = await page.$$(`.page-jobs-main .filter-condition-inner .active[ka^="${optionKaPrefix}"]`)
             for (const it of activeOptionElAtCurrentFilterProxyList) {
               await it.click()
             }
           } else {
-            // select 涓嶉檺 immediately
+            // select 不限 immediately
             const buxianOptionElProxy = await page.$(`.page-jobs-main .filter-condition-inner [ka="${optionKaPrefix}${0}"]`)
             await buxianOptionElProxy.click()
           }
@@ -622,10 +622,10 @@ async function setFilterCondition (selectedFilters) {
               })
             })
           )).map(it => it.replace(optionKaPrefix, '')).map(Number)
-          if (placeholderText !== '钖祫寰呴亣') {
+          if (placeholderText !== '薪资待遇') {
             for(let i = 0; i < activeOptionValues.length; i++) {
               let activeValue
-              if (placeholderText === '鍏徃琛屼笟') {
+              if (placeholderText === '公司行业') {
                 activeValue = industryFilterConditionsMapByIndex[activeOptionValues[i]]?.code
               } else {
                 activeValue = activeOptionValues[i]
@@ -639,7 +639,7 @@ async function setFilterCondition (selectedFilters) {
           //#endregion
           //#region only click the one which we need check, don't change already checked.
           const conditionToCheck = currentFilterConditions.filter(it => {
-            if (placeholderText === '鍏徃琛屼笟') {
+            if (placeholderText === '公司行业') {
               return !activeOptionValues.map(value => industryFilterConditionsMapByIndex[value].code).includes(it);
             } else {
               return !activeOptionValues.includes(it)
@@ -647,7 +647,7 @@ async function setFilterCondition (selectedFilters) {
           })
           for(let j = 0; j < conditionToCheck.length; j++) {
             let optionValue
-            if (placeholderText === '鍏徃琛屼笟') {
+            if (placeholderText === '公司行业') {
               optionValue = industryFilterConditionCodeToIndexMap[conditionToCheck[j]]
             } else {
               optionValue = conditionToCheck[j]
@@ -961,7 +961,7 @@ async function toRecommendPage (hooks) {
                 // so just set those job which city is not suit to blockJobNotSuit
                 // to skip view detail
 
-                // skip invalid salaryData (鍏艰亴銆佹棩缁撱€佸疄涔?etc)
+                // skip invalid salaryData (兼职、日结、实习 etc)
                 jobListData.forEach(it => {
                   const salaryData = parseSalary(it.salaryDesc)
                   if (!salaryData.high || !salaryData.low) {
@@ -1477,18 +1477,13 @@ async function toRecommendPage (hooks) {
                   }
                   //#region
                   // null
-                  // 鍒氬垰娲昏穬 // 浠婃棩娲昏穬 // 鏄ㄦ棩娲昏穬 // 3鏃ュ唴娲昏穬 // 鏈懆娲昏穬 // 2鍛ㄥ唴娲昏穬
-                  // 鏈湀娲昏穬 // 2鏈堝唴娲昏穬 // 3鏈堝唴娲昏穬 // 4鏈堝唴娲昏穬 // 5鏈堝唴娲昏穬 // 杩戝崐骞存椿璺?// 鍗婂勾鍓嶆椿璺?
+                  // 刚刚活跃 // 今日活跃 // 昨日活跃 // 3日内活跃 // 本周活跃 // 2周内活跃
+                  // 本月活跃 // 2月内活跃 // 3月内活跃 // 4月内活跃 // 5月内活跃 // 近半年活跃 // 半年前活跃
                   //#endregion
                   const distanceCheckResult =
                     getDistanceCheckResult(selectedJobData) ??
                     getDistanceCheckResult(targetJobData)
-                  let activeTimeDescForCompare = targetJobData.bossInfo.activeTimeDesc
-                  // handle empty string case
-                  if (activeTimeDescForCompare === '') {
-                    activeTimeDescForCompare = '鍗婂勾鍓嶆椿璺?'
-                  }
-                  const indexOfActiveText = activeDescList.indexOf(activeTimeDescForCompare)
+                  const indexOfActiveText = activeDescList.indexOf(targetJobData.bossInfo.activeTimeDesc)
                   if (
                     markAsNotActiveSelectedTimeRange > 0 &&
                     indexOfActiveText > 0 && indexOfActiveText <= markAsNotActiveSelectedTimeRange
@@ -1557,7 +1552,7 @@ async function toRecommendPage (hooks) {
                     continue continueFind
                   }
                   const startChatButtonInnerHTML = await page.evaluate('document.querySelector(".job-detail-box .op-btn.op-btn-chat")?.innerHTML.trim()')
-                  if (startChatButtonInnerHTML !== '绔嬪嵆娌熼€?) {
+                  if (startChatButtonInnerHTML !== '立即沟通') {
                     blockBossNotNewChat.add(targetJobData.jobInfo.encryptUserId)
                     continue continueFind
                   }
@@ -1606,23 +1601,10 @@ async function toRecommendPage (hooks) {
                 return false
               }
             );
-            await sleepWithRandomDelay(3000)
-            let res
-            try {
-              res = await addFriendResponse.json()
-              return res
-            }
-            catch(err) {
-              await sleep(2000)
-              if (page.url().startsWith('https://www.zhipin.com/web/geek/chat')) {
-                throw new Error('PAGE_JUMPED_TO_CHAT_PAGE')
-              }
-              else {
-                throw err
-              }
-            }
+            const res = await addFriendResponse.json()
+            return res
           }
-          const waitAndHandleChatSuccess = async ({ hasGoToChatPage = false } = {}) => {
+          const waitAndHandleChatSuccess = async () => {
             await hooks.newChatStartup?.promise(
               targetJobData,
               {
@@ -1636,27 +1618,18 @@ async function toRecommendPage (hooks) {
 
             await storeStorage(page).catch(() => void 0)
             await sleepWithRandomDelay(1500)
-            if (hasGoToChatPage) {
-              await page.goBack()
-              await page.waitForFunction(() => {
-                return location.href.startsWith(`https://www.zhipin.com/web/geek/jobs`) && document.readyState === 'complete'
-              })
-              await sleepWithRandomDelay(2000)
-            }
             const closeDialogButtonProxy = await page.$('.greet-boss-dialog .greet-boss-footer .cancel-btn')
-            if (closeDialogButtonProxy) {
-              await closeDialogButtonProxy.click()
-              await sleepWithRandomDelay(2000)
-            }
+            await closeDialogButtonProxy.click()
+            await sleepWithRandomDelay(2000)
           }
-          const handleAddFriendResponse = async (res, { hasGoToChatPage = false } = {}) => {
+          const handleAddFriendResponse = async (res) => {
             if (res.code === 0) {
-              await waitAndHandleChatSuccess({ hasGoToChatPage })
+              await waitAndHandleChatSuccess()
             }
             else if (
               res.zpData.bizCode === 1 &&
               res.zpData.bizData?.chatRemindDialog?.blockLevel === 0 &&
-              /鍓‐d+娆℃矡閫氭満浼?.test(res.zpData.bizData?.chatRemindDialog?.content)
+              /剩\d+次沟通机会/.test(res.zpData.bizData?.chatRemindDialog?.content)
             ) {
               await waitForSageTimeOrJustContinue({
                 tag: 'beforeJobChatStartupAfterTwiceConfirm',
@@ -1669,13 +1642,13 @@ async function toRecommendPage (hooks) {
             }
             else if (
               res.zpData.bizCode === 1 &&
-              /鐚庡ご/.test(res.zpData.bizData?.chatRemindDialog?.content)
+              /猎头/.test(res.zpData.bizData?.chatRemindDialog?.content)
             ) {
               await waitForSageTimeOrJustContinue({
                 tag: 'beforeJobChatStartupAfterTwiceConfirm',
                 hooks
               })
-              const confirmButton = await page.waitForSelector(`xpath///*[contains(@class, "chat-block-dialog")]//*[contains(@class, "chat-block-footer")]//*[contains(text(), "缁х画")]`)
+              const confirmButton = await page.waitForSelector(`xpath///*[contains(@class, "chat-block-dialog")]//*[contains(@class, "chat-block-footer")]//*[contains(text(), "继续")]`)
               await confirmButton.click()
               const nextRes = await waitAddFriendResponse()
               await handleAddFriendResponse(nextRes)
@@ -1684,8 +1657,8 @@ async function toRecommendPage (hooks) {
               res.zpData.bizCode === 1 &&
               res.zpData.bizData?.chatRemindDialog?.blockLevel === 0 && 
               (
-                res.zpData.bizData?.chatRemindDialog?.content === `浠婃棩娌熼€氫汉鏁板凡杈句笂闄愶紝璇锋槑澶╁啀璇昤 ||
-                /鏄庡ぉ鍐嶆潵/.test(res.zpData.bizData?.chatRemindDialog?.content)
+                res.zpData.bizData?.chatRemindDialog?.content === `今日沟通人数已达上限，请明天再试` ||
+                /明天再来/.test(res.zpData.bizData?.chatRemindDialog?.content)
               )
             ) {
               // startup chat error, may the chance of today has used out
@@ -1699,21 +1672,9 @@ async function toRecommendPage (hooks) {
               throw new Error('STARTUP_CHAT_ERROR_WITH_UNKNOWN_ERROR')
             }
           }
-          let res
-          try {
-            res = await waitAddFriendResponse()
-            await handleAddFriendResponse(res)
-          }
-          catch (err) {
-            if (err instanceof Error && err.message === 'PAGE_JUMPED_TO_CHAT_PAGE') {
-              await handleAddFriendResponse({
-                code: 0
-              }, { hasGoToChatPage: true })
-            }
-            else {
-              throw err
-            }
-          }
+          const res = await waitAddFriendResponse()
+          await handleAddFriendResponse(res)
+          // #endregion
         } catch (err) {
           if (err instanceof Error) {
             switch (err.message) {
@@ -1786,9 +1747,6 @@ export async function mainLoop (hooks) {
     const bossLocalStorage = readStorageFile('boss-local-storage.json')
     await hooks.cookieWillSet?.promise(bossCookies)
     for(let i = 0; i < bossCookies.length; i++){
-      if (Object.hasOwn(bossCookies[i], 'sameSite')) {
-        bossCookies[i].sameSite = 'unspecified'
-      }
       await page.setCookie(bossCookies[i]);
     }
     await setDomainLocalStorage(browser, localStoragePageUrl, bossLocalStorage)

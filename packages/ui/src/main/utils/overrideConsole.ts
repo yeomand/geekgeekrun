@@ -2,6 +2,16 @@ import path from 'node:path'
 import os from 'node:os'
 import fs from 'node:fs'
 import dayjs from 'dayjs'
+import iconv from 'iconv-lite'
+
+function repairMojibake(value: unknown): unknown {
+  if (typeof value === 'string') {
+    const repaired = iconv.decode(iconv.encode(value, 'gbk'), 'utf8')
+    return repaired.includes('\uFFFD') ? value : repaired
+  }
+
+  return value
+}
 
 export default function overrideConsole() {
   const originConsoleLog = console.log.bind(console)
@@ -26,11 +36,12 @@ export default function overrideConsole() {
 
   console.log = (...args: any[]) => {
     const lineHead = `${dayjs().format('YYYY-MM-DD HH:mm:ss.SSS')} [log][PID=${process.pid}]`
-    originConsoleLog(lineHead, ...args)
+    const normalizedArgs = args.map(repairMojibake)
+    originConsoleLog(lineHead, ...normalizedArgs)
     logFileStream.write(
       [
         lineHead,
-        args.map((arg) => {
+        normalizedArgs.map((arg) => {
           try {
             return JSON.stringify(arg)
           } catch (err) {
@@ -42,11 +53,12 @@ export default function overrideConsole() {
   }
   console.warn = (...args: any[]) => {
     const lineHead = `${dayjs().format('YYYY-MM-DD HH:mm:ss.SSS')} [warn][PID=${process.pid}]`
-    originConsoleWarn(lineHead, ...args)
+    const normalizedArgs = args.map(repairMojibake)
+    originConsoleWarn(lineHead, ...normalizedArgs)
     warnFileStream.write(
       [
         lineHead,
-        args.map((arg) => {
+        normalizedArgs.map((arg) => {
           try {
             return JSON.stringify(arg)
           } catch (err) {
@@ -57,12 +69,13 @@ export default function overrideConsole() {
     )
   }
   console.error = (...args: any[]) => {
-    const lineHead = `${dayjs().format('YYYY-MM-DD HH:mm:ss.SSS')} [warn][PID=${process.pid}]`
-    originConsoleError(lineHead, ...args)
+    const lineHead = `${dayjs().format('YYYY-MM-DD HH:mm:ss.SSS')} [error][PID=${process.pid}]`
+    const normalizedArgs = args.map(repairMojibake)
+    originConsoleError(lineHead, ...normalizedArgs)
     errorFileStream.write(
       [
         lineHead,
-        args.map((arg) => {
+        normalizedArgs.map((arg) => {
           try {
             return JSON.stringify(arg)
           } catch (err) {
